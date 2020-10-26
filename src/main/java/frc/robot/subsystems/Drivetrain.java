@@ -200,32 +200,6 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Right Error", getFrontRightRPM() - rightVelocity);
   }
 
-  public void ClosedLoopControllerSplitArcadeYawDrive(XboxController joy) { //Yaw-Drive
-    y = joy.getY(Hand.kLeft);
-    x = joy.getX(Hand.kRight);
-
-    if(!joy.getBumper(Hand.kLeft)) {
-      x *= -y;
-    }
-    
-    //3.5 m/s at maximum speed, 2 rad/s maximum rotation rate (~114 deg/s)
-    chassisSpeeds = new ChassisSpeeds(-y * DriverConstants.maxSpeed, 0.0, -x * DriverConstants.maxRotation);
-
-    wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
-
-    leftVelocity = wheelSpeeds.leftMetersPerSecond;
-    rightVelocity = -wheelSpeeds.rightMetersPerSecond;
-
-    //Convert m/s to rpm:
-    leftVelocity = (leftVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-    rightVelocity = (rightVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-
-    FrontRight.set(rightVelocity * DriveTrainVelocityControlConstantsRight.kFF);
-    BackRight.set(rightVelocity * DriveTrainVelocityControlConstantsRight.kFF);
-    FrontLeft.set(leftVelocity * DriveTrainVelocityControlConstantsLeft.kFF);
-    BackLeft.set(leftVelocity * DriveTrainVelocityControlConstantsLeft.kFF);
-  }
-
   public void stopClosedLoop() {
     velocityControllerLeft.setReference(0, ControlType.kVelocity);
     velocityControllerRight.setReference(0, ControlType.kVelocity);
