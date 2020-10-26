@@ -173,33 +173,6 @@ public class Drivetrain extends SubsystemBase {
     robot.arcadeDrive(-y * 1, x * 1);
   }
 
-  public void ClosedLoopControllerSplitArcade(XboxController joy) { //Side-side
-    y = joy.getY(Hand.kLeft);
-    x = joy.getX(Hand.kRight);
-
-    if(!joy.getBumper(Hand.kLeft)) {
-      x *= -y;
-    }
-    
-    //3.5 m/s at maximum speed, 2 rad/s maximum rotation rate (~114 deg/s)
-    chassisSpeeds = new ChassisSpeeds(-y * DriverConstants.maxSpeed, 0.0, -x * DriverConstants.maxRotation);
-
-    wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
-
-    leftVelocity = wheelSpeeds.leftMetersPerSecond;
-    rightVelocity = -wheelSpeeds.rightMetersPerSecond;
-
-    //Convert m/s to rpm:
-    leftVelocity = (leftVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-    rightVelocity = (rightVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-
-    velocityControllerLeft.setReference(leftVelocity, ControlType.kVelocity);
-    velocityControllerRight.setReference(rightVelocity, ControlType.kVelocity);
-
-    SmartDashboard.putNumber("Left Error", getFrontLeftRPM() - leftVelocity);
-    SmartDashboard.putNumber("Right Error", getFrontRightRPM() - rightVelocity);
-  }
-
   public void ClosedLoopControllerSplitArcadeYawDrive(XboxController joy) { //Yaw-Drive
     y = joy.getY(Hand.kLeft);
     x = joy.getX(Hand.kRight);
