@@ -34,8 +34,7 @@ import edu.wpi.first.wpilibj.trajectory.Trajectory;
 import edu.wpi.first.wpilibj.util.Units;
 import frc.robot.Constants;
 import frc.robot.Constants.DriveTrainConstants;
-import frc.robot.Constants.DriveTrainVelocityControlConstantsLeft;
-import frc.robot.Constants.DriveTrainVelocityControlConstantsRight;
+import frc.robot.Constants.DriveTrainVelocityControlConstants;
 import frc.robot.Constants.DriverConstants;
 
 public class Drivetrain extends SubsystemBase {
@@ -125,19 +124,19 @@ public class Drivetrain extends SubsystemBase {
 
     velocityControllerLeft = FrontLeft.getPIDController();
     
-    velocityControllerLeft.setP(DriveTrainVelocityControlConstantsLeft.kP);
-    velocityControllerLeft.setI(DriveTrainVelocityControlConstantsLeft.kI);
-    velocityControllerLeft.setD(DriveTrainVelocityControlConstantsLeft.kD);
-    velocityControllerLeft.setIZone(DriveTrainVelocityControlConstantsLeft.kIZone);
-    velocityControllerLeft.setFF(DriveTrainVelocityControlConstantsLeft.kFF);
+    velocityControllerLeft.setP(DriveTrainVelocityControlConstants.kP);
+    velocityControllerLeft.setI(DriveTrainVelocityControlConstants.kI);
+    velocityControllerLeft.setD(DriveTrainVelocityControlConstants.kD);
+    velocityControllerLeft.setIZone(DriveTrainVelocityControlConstants.kIZone);
+    velocityControllerLeft.setFF(DriveTrainVelocityControlConstants.kFF);
 
     velocityControllerRight = FrontRight.getPIDController();
     
-    velocityControllerRight.setP(DriveTrainVelocityControlConstantsRight.kP);
-    velocityControllerRight.setI(DriveTrainVelocityControlConstantsRight.kI);
-    velocityControllerRight.setD(DriveTrainVelocityControlConstantsRight.kD);
-    velocityControllerRight.setIZone(DriveTrainVelocityControlConstantsRight.kIZone);
-    velocityControllerRight.setFF(DriveTrainVelocityControlConstantsRight.kFF);
+    velocityControllerRight.setP(DriveTrainVelocityControlConstants.kP);
+    velocityControllerRight.setI(DriveTrainVelocityControlConstants.kI);
+    velocityControllerRight.setD(DriveTrainVelocityControlConstants.kD);
+    velocityControllerRight.setIZone(DriveTrainVelocityControlConstants.kIZone);
+    velocityControllerRight.setFF(DriveTrainVelocityControlConstants.kFF);
 
     FrontLeft.burnFlash();
     BackLeft.burnFlash();
@@ -200,32 +199,6 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Right Error", getFrontRightRPM() - rightVelocity);
   }
 
-  public void ClosedLoopControllerSplitArcadeYawDrive(XboxController joy) { //Yaw-Drive
-    y = joy.getY(Hand.kLeft);
-    x = joy.getX(Hand.kRight);
-
-    if(!joy.getBumper(Hand.kLeft)) {
-      x *= -y;
-    }
-    
-    //3.5 m/s at maximum speed, 2 rad/s maximum rotation rate (~114 deg/s)
-    chassisSpeeds = new ChassisSpeeds(-y * DriverConstants.maxSpeed, 0.0, -x * DriverConstants.maxRotation);
-
-    wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
-
-    leftVelocity = wheelSpeeds.leftMetersPerSecond;
-    rightVelocity = -wheelSpeeds.rightMetersPerSecond;
-
-    //Convert m/s to rpm:
-    leftVelocity = (leftVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-    rightVelocity = (rightVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
-
-    FrontRight.set(rightVelocity * DriveTrainVelocityControlConstantsRight.kFF);
-    BackRight.set(rightVelocity * DriveTrainVelocityControlConstantsRight.kFF);
-    FrontLeft.set(leftVelocity * DriveTrainVelocityControlConstantsLeft.kFF);
-    BackLeft.set(leftVelocity * DriveTrainVelocityControlConstantsLeft.kFF);
-  }
-
   public void stopClosedLoop() {
     velocityControllerLeft.setReference(0, ControlType.kVelocity);
     velocityControllerRight.setReference(0, ControlType.kVelocity);
@@ -249,6 +222,14 @@ public class Drivetrain extends SubsystemBase {
 
   public double getBackLeftRPM(){
     return BackLeftEnc.getVelocity();
+  }
+
+  public double getRightVelocity() {
+    return (getBackRightRPM() + getFrontRightRPM()) / 2;
+  }
+
+  public double getLeftVelocity() {
+    return (getBackLeftRPM() + getFrontLeftRPM()) / 2;
   }
 
   public void pathFollow() {

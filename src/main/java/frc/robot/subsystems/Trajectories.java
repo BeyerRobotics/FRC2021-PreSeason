@@ -56,7 +56,7 @@ public class Trajectories extends SubsystemBase {
     final String trajectoryJSON = "paths/output/Straight.wpilib.json";
     final Path trajectoryPath = Filesystem.getDeployDirectory().toPath().resolve(trajectoryJSON);
     try {
-      final Trajectory straightTrajectory = TrajectoryUtil.fromPathweaverJson(trajectoryPath);
+      straightTrajectory = TrajectoryUtil.fromPathweaverJson(trajectoryPath);
     } catch (IOException e) {
       e.printStackTrace();
     }

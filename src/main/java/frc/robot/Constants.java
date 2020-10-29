@@ -53,18 +53,10 @@ public final class Constants {
     public static final double maxRotation = 4; //  rad/s
   }
 
-  public class DriveTrainVelocityControlConstantsLeft {
+  public class DriveTrainVelocityControlConstants {
     public static final double kP = 0.0008;
     public static final double kI = 0.000001;
     public static final double kD = 0.001; //0.001 works well
-    public static final double kIZone = 100;
-    public static final double kFF = 0.00019;
-  }
-
-  public class DriveTrainVelocityControlConstantsRight {
-    public static final double kP = 0.0008; //0.0008
-    public static final double kI = 0.000001; //0.000001
-    public static final double kD = 0.001;
     public static final double kIZone = 100;
     public static final double kFF = 0.00019;
   }
