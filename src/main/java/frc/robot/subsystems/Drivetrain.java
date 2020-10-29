@@ -75,8 +75,7 @@ public class Drivetrain extends SubsystemBase {
 
   private PowerDistributionPanel pdp;
 
-  private CANPIDController velocityControllerLeft;
-  private CANPIDController velocityControllerRight;
+  private DTVelocityControllers DTVelocityController = new DTVelocityControllers();
 
   public Drivetrain() {
     FrontLeft = new CANSparkMax(DTL_IDs[0], MotorType.kBrushless);
@@ -121,22 +120,6 @@ public class Drivetrain extends SubsystemBase {
     BackRight.setClosedLoopRampRate(0.05);
     FrontLeft.setClosedLoopRampRate(0.05);
     FrontRight.setClosedLoopRampRate(0.05);
-
-    velocityControllerLeft = FrontLeft.getPIDController();
-    
-    velocityControllerLeft.setP(DriveTrainVelocityControlConstants.kP);
-    velocityControllerLeft.setI(DriveTrainVelocityControlConstants.kI);
-    velocityControllerLeft.setD(DriveTrainVelocityControlConstants.kD);
-    velocityControllerLeft.setIZone(DriveTrainVelocityControlConstants.kIZone);
-    velocityControllerLeft.setFF(DriveTrainVelocityControlConstants.kFF);
-
-    velocityControllerRight = FrontRight.getPIDController();
-    
-    velocityControllerRight.setP(DriveTrainVelocityControlConstants.kP);
-    velocityControllerRight.setI(DriveTrainVelocityControlConstants.kI);
-    velocityControllerRight.setD(DriveTrainVelocityControlConstants.kD);
-    velocityControllerRight.setIZone(DriveTrainVelocityControlConstants.kIZone);
-    velocityControllerRight.setFF(DriveTrainVelocityControlConstants.kFF);
 
     FrontLeft.burnFlash();
     BackLeft.burnFlash();
@@ -192,20 +175,28 @@ public class Drivetrain extends SubsystemBase {
     leftVelocity = (leftVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
     rightVelocity = (rightVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelCircumference;
 
-    velocityControllerLeft.setReference(leftVelocity, ControlType.kVelocity);
-    velocityControllerRight.setReference(rightVelocity, ControlType.kVelocity);
+    DTVelocityController.setLeftVelocity(leftVelocity);
+    DTVelocityController.setRightVelocity(rightVelocity);
 
     SmartDashboard.putNumber("Left Error", getFrontLeftRPM() - leftVelocity);
     SmartDashboard.putNumber("Right Error", getFrontRightRPM() - rightVelocity);
   }
 
   public void stopClosedLoop() {
-    velocityControllerLeft.setReference(0, ControlType.kVelocity);
-    velocityControllerRight.setReference(0, ControlType.kVelocity);
+    DTVelocityController.setLeftVelocity(0);
+    DTVelocityController.setRightVelocity(0);
   }
 
   public void stopMotors() {
     robot.stopMotor();
+  }
+
+  public void setLeftMotors(double power) {
+    FrontLeft.set(power);
+  }
+
+  public void setRightMotors(double power) {
+    FrontRight.set(power);
   }
 
   public double getFrontRightRPM(){
@@ -249,8 +240,8 @@ public class Drivetrain extends SubsystemBase {
     leftVelocity = (leftVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelDiameter;
     rightVelocity = (rightVelocity * 60 * DriveTrainConstants.reduction) / DriveTrainConstants.wheelDiameter;
 
-    velocityControllerLeft.setReference(leftVelocity, ControlType.kVelocity);
-    velocityControllerRight.setReference(rightVelocity, ControlType.kVelocity);
+    DTVelocityController.setLeftVelocity(leftVelocity);
+    DTVelocityController.setRightVelocity(rightVelocity);
   }
 
   public void resetOdometry() {

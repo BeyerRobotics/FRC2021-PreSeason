@@ -13,9 +13,20 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class DTVelocityControllers extends SubsystemBase {
   DTVelocityControllersLoop DTControllers = new DTVelocityControllersLoop();
+  double leftVelocity = 0;
+  double rightVelocity = 0;
 
   public DTVelocityControllers() {
+    DTControllers.initPIDs();
     DTControllers.start();
+  }
+
+  public void setLeftVelocity(double velocity) { //Ask josh if these are necessary
+    DTControllers.setLeftVelocity(velocity);
+  }
+
+  public void setRightVelocity(double velocity) {
+    DTControllers.setRightVelocity(velocity);
   }
 
   @Override
