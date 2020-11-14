@@ -47,39 +47,48 @@ public class Drivetrain extends SubsystemBase {
     DriveTrainConstants.DTR_FRONT, DriveTrainConstants.DTR_BACK
   };
 
-  private CANSparkMax FrontLeft, BackLeft, FrontRight, BackRight;
+  private Odometry odometry;
+  private Limelight limelight;
 
-  private CANEncoder FrontRightEnc, FrontLeftEnc;
+  public CANSparkMax FrontLeft, BackLeft, FrontRight, BackRight;
 
-  private CANEncoder BackRightEnc, BackLeftEnc;
+  public CANEncoder FrontRightEnc, FrontLeftEnc;
+
+  public CANEncoder BackRightEnc, BackLeftEnc;
+
+  private  AHRS navx;
 
   private double x, y;
   private double leftVelocity, rightVelocity;
 
-  private AHRS navx;
-
-  private DifferentialDrive robot;
+  public DifferentialDrive robot;
 
   private DifferentialDriveKinematics kinematics;
   private ChassisSpeeds chassisSpeeds;
   private DifferentialDriveWheelSpeeds wheelSpeeds;
 
-  private double startTime;
-
   private RamseteController autoController;
   private Trajectory.State goal;
   private Trajectory trajectory;
   private Trajectories trajectories;
-  private Pose2d currentPose;
-  private DifferentialDriveOdometry odometer;
-  private Rotation2d yaw;
 
   private PowerDistributionPanel pdp;
 
   private CANPIDController velocityControllerLeft;
   private CANPIDController velocityControllerRight;
 
-  public Drivetrain() {
+  private Odometry fieldOdometry;
+
+  private Pose2d fieldPose;
+
+   private double error, prevError, integral, derivative = 0;
+
+   private double power, rightPower, leftPower;
+
+   private boolean gotToSetAngle;
+
+
+  public Drivetrain(Odometry odometry, Limelight limelight) {
     FrontLeft = new CANSparkMax(DTL_IDs[0], MotorType.kBrushless);
     BackLeft = new CANSparkMax(DTL_IDs[1], MotorType.kBrushless);
     FrontRight = new CANSparkMax(DTR_IDs[0], MotorType.kBrushless);
@@ -157,13 +166,7 @@ public class Drivetrain extends SubsystemBase {
     
     //robot = new DifferentialDrive(FrontLeft, FrontRight);
 
-    navx = new AHRS(Constants.NAVX_PORT);
-    navx.reset();
-
     pdp = new PowerDistributionPanel();
-
-    yaw = new Rotation2d(Units.degreesToRadians(navx.getYaw()));
-    odometer = new DifferentialDriveOdometry(yaw, new Pose2d(0, 0, new Rotation2d()));
   }
 
   public void ControllerSplitArcade(XboxController joy) {
@@ -180,6 +183,8 @@ public class Drivetrain extends SubsystemBase {
     if(!joy.getBumper(Hand.kLeft)) {
       x *= -y;
     }
+
+    
     
     //3.5 m/s at maximum speed, 2 rad/s maximum rotation rate (~114 deg/s)
     chassisSpeeds = new ChassisSpeeds(-y * DriverConstants.maxSpeed, 0.0, -x * DriverConstants.maxRotation);
@@ -196,8 +201,49 @@ public class Drivetrain extends SubsystemBase {
     velocityControllerLeft.setReference(leftVelocity, ControlType.kVelocity);
     velocityControllerRight.setReference(rightVelocity, ControlType.kVelocity);
 
-    SmartDashboard.putNumber("Left Error", getFrontLeftRPM() - leftVelocity);
-    SmartDashboard.putNumber("Right Error", getFrontRightRPM() - rightVelocity);
+    SmartDashboard.putNumber("Left Error", fieldOdometry.getFrontLeftRPM() - leftVelocity);
+    SmartDashboard.putNumber("Right Error", fieldOdometry.getFrontRightRPM() - rightVelocity);
+  }
+
+  public void TurnToAnglePID(final double angle, final double maxPower, final String controlType){
+
+    if(controlType == "odometry"){
+    error = (angle - -odometry.getYaw());
+    }
+
+    else if(controlType == "limelight"){
+      error = angle - limelight.getHorizontalOffsetInDegrees();
+    }
+
+
+
+    if(Math.abs(error) < 5) {
+      integral += (error*.02);
+    } else {
+      integral = 0;
+    }
+
+    derivative = (error - prevError) / 0.02;
+
+    power = (DriverConstants.Kp*error + DriverConstants.Ki*integral + DriverConstants.Kd*derivative);
+
+    if(power > maxPower) {
+      power = maxPower;
+    } 
+
+    if(Math.abs(error) <= 0.5){
+      gotToSetAngle = true;
+    }else{
+      gotToSetAngle = false;
+    }
+
+    rightPower = power + DriverConstants.FF;
+    leftPower = power + DriverConstants.FF;
+
+    FrontLeft.set(-leftPower);
+    FrontRight.set(-rightPower);
+
+    prevError = error;
   }
 
   public void stopClosedLoop() {
@@ -209,29 +255,13 @@ public class Drivetrain extends SubsystemBase {
     robot.stopMotor();
   }
 
-  public double getFrontRightRPM(){
-    return FrontRightEnc.getVelocity();
-  }
-
-  public double getFrontLeftRPM(){
-    return FrontLeftEnc.getVelocity();
-  }
-
-  public double getBackRightRPM(){
-    return BackRightEnc.getVelocity();
-  }
-
-  public double getBackLeftRPM(){
-    return BackLeftEnc.getVelocity();
-  }
-
   public void pathFollow() {
-    currentPose = odometer.getPoseMeters();
+    fieldPose = fieldOdometry.getPose();
     
-    SmartDashboard.putNumber("AutoTime", Timer.getFPGATimestamp() - startTime);
-    goal = trajectory.sample(Timer.getFPGATimestamp() - startTime); // sample the trajectory at time seconds from the beginning
+    SmartDashboard.putNumber("AutoTime", Timer.getFPGATimestamp() - fieldOdometry.startTime);
+    goal = trajectory.sample(Timer.getFPGATimestamp() - fieldOdometry.startTime); // sample the trajectory at time seconds from the beginning
 
-    chassisSpeeds = autoController.calculate(currentPose, goal);
+    chassisSpeeds = autoController.calculate(fieldPose, goal);
 
     wheelSpeeds = kinematics.toWheelSpeeds(chassisSpeeds);
 
@@ -246,27 +276,6 @@ public class Drivetrain extends SubsystemBase {
     velocityControllerRight.setReference(rightVelocity, ControlType.kVelocity);
   }
 
-  public void resetOdometry() {
-    startTime = Timer.getFPGATimestamp();
-
-    navx.reset();
-
-    resetEncoders();
-
-    Pose2d initPose = new Pose2d(0.0, 0.0, new Rotation2d());
-
-    odometer.resetPosition(initPose, new Rotation2d());
-  }
-
-  public void updateOdometry() {
-    var gyroAngle = Rotation2d.fromDegrees(-navx.getAngle());
-
-    // Update the pose
-    currentPose = odometer.update(gyroAngle, FrontLeftEnc.getPosition(), -FrontRightEnc.getPosition());
-    SmartDashboard.putNumber("Yaw", currentPose.getRotation().getDegrees());
-    SmartDashboard.putNumber("X", currentPose.getTranslation().getX());
-    SmartDashboard.putNumber("Y", currentPose.getTranslation().getY());
-  }
 
   public void resetEncoders() {
     FrontLeftEnc.setPosition(0);
@@ -276,12 +285,12 @@ public class Drivetrain extends SubsystemBase {
   @Override
   public void periodic() {
     SmartDashboard.putNumber("Total Current", pdp.getTotalCurrent());
-    SmartDashboard.putNumber("FrontRightRPM", getFrontRightRPM());
-    SmartDashboard.putNumber("FrontLeftRPM", getFrontLeftRPM());
+    SmartDashboard.putNumber("FrontRightRPM", fieldOdometry.getFrontRightRPM());
+    SmartDashboard.putNumber("FrontLeftRPM", fieldOdometry.getFrontLeftRPM());
 
     SmartDashboard.putNumber("FrontRightPos", -FrontRightEnc.getPosition());
     SmartDashboard.putNumber("FrontLeftPos", FrontLeftEnc.getPosition());
 
-    updateOdometry();
+    fieldOdometry.updateOdometry();
   }
 }

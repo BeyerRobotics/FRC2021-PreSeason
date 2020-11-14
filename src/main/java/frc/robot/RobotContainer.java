@@ -14,6 +14,8 @@ import frc.robot.commands.AutonomousCommand;
 import frc.robot.commands.ClosedLoopXboxControllerSplitArcade;
 //import frc.robot.commands.XboxControllerSplitArcade;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Limelight;
+import frc.robot.subsystems.Odometry;
 import frc.robot.subsystems.Trajectories;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
@@ -21,7 +23,9 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 public class RobotContainer {
   XboxController Driver = new XboxController(ControllerConstants.DRIVER);
 
-  private final Drivetrain drivetrain = new Drivetrain();
+  private final Odometry odometry = new Odometry();
+  private final Limelight limelight = new Limelight(odometry);
+  private final Drivetrain drivetrain = new Drivetrain(odometry, limelight);
 
   //private final XboxControllerSplitArcade xboxControllerSplitArcade = new XboxControllerSplitArcade(drivetrain, Driver);
 

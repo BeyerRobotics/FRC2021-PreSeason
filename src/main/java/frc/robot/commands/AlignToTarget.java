@@ -7,39 +7,53 @@
 
 package frc.robot.commands;
 
+import java.lang.module.ModuleDescriptor.Requires;
+
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.subsystems.Drivetrain;
+import frc.robot.subsystems.Limelight;
 import frc.robot.subsystems.Odometry;
-import frc.robot.subsystems.Trajectories;
 
-public class AutonomousCommand extends CommandBase {
+public class AlignToTarget extends CommandBase {
+  /**
+   * Creates a new AlignToTarget.
+   */
+
   private Drivetrain drivetrain;
-  private Trajectories trajectories;
   private Odometry odometry;
+  private Limelight limelight;
 
-  public AutonomousCommand(Drivetrain subsystem, Trajectories subsystem2) {
-    drivetrain = subsystem;
-    trajectories = subsystem2;
+  private double angle = 0;
+
+  public AlignToTarget(Drivetrain drivetrainSubsystem, Odometry odometrySubsystem, Limelight limelightSubsystem) {
+    drivetrain = drivetrainSubsystem;
+    odometry = odometrySubsystem;
+    limelight = limelightSubsystem;
+
     addRequirements(drivetrain);
-    addRequirements(trajectories);
+    addRequirements(odometry);
+    addRequirements(limelight);
   }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
-    odometry.resetOdometry();
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    drivetrain.pathFollow();
+    if(limelight.validTarget()){
+      drivetrain.TurnToAnglePID(angle, 1.0, "limelight");
+    }else{
+      angle = odometry.getAngleToTarget();
+      drivetrain.TurnToAnglePID(angle, 1.0, "odometry");
+    }
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-
   }
 
   // Returns true when the command should end.

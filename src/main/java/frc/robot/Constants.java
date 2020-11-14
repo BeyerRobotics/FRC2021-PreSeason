@@ -51,6 +51,15 @@ public final class Constants {
   public class DriverConstants {
     public static final double maxSpeed = 3.5;  //  m/s
     public static final double maxRotation = 4; //  rad/s
+
+     /*Navx PID*/
+     public static final double Kp = 0.005;//0.00025
+     public static final double Ki = 0.00000;//0.00000165
+     public static final double Kd = 0.0006;//0.13
+     public static final double FF = 0.0;//.014
+     public static final double IZone = 100;//100
+     public static final double Min = 0;
+     public static final double Max = 1;
   }
 
   public class DriveTrainVelocityControlConstantsLeft {
@@ -67,5 +76,15 @@ public final class Constants {
     public static final double kD = 0.001;
     public static final double kIZone = 100;
     public static final double kFF = 0.00019;
+  }
+
+  public class fieldParameters{
+    public static final double targetY  = 1;
+    public static final double targetX  = 1;
+  }
+
+  public class limelightConstants{
+    public static final double vFOV = 41;
+    public static final double hFOV = 54;
   }
 }
